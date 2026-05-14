@@ -1,0 +1,119 @@
+// Prisma Schema - Medical App
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/**
+ * =========================
+ * USER
+ * =========================
+ */
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role
+  createdAt DateTime @default(now())
+
+  doctor  Doctor?
+  patient Patient?
+}
+
+/**
+ * =========================
+ * ROLE ENUM
+ * =========================
+ */
+enum Role {
+  admin
+  doctor
+  patient
+}
+
+/**
+ * =========================
+ * DOCTOR
+ * =========================
+ */
+model Doctor {
+  id String @id @default(cuid())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique
+
+  specialty String?
+
+  prescriptions Prescription[] @relation("AuthoredBy")
+}
+
+/**
+ * =========================
+ * PATIENT
+ * =========================
+ */
+model Patient {
+  id String @id @default(cuid())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique
+
+  birthDate DateTime?
+
+  prescriptions Prescription[]
+}
+
+/**
+ * =========================
+ * PRESCRIPTION
+ * =========================
+ */
+model Prescription {
+  id        String             @id @default(cuid())
+  code      String             @unique
+  status    PrescriptionStatus @default(pending)
+  notes     String?
+  createdAt DateTime           @default(now())
+  consumeAt DateTime?
+
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patientId String
+
+  author   Doctor @relation("AuthoredBy", fields: [authorId], references: [id], onDelete: Restrict)
+  authorId String
+
+  items PrescriptionItem[]
+}
+
+/**
+ * =========================
+ * PRESCRIPTION ITEMS
+ * =========================
+ */
+model PrescriptionItem {
+  id String @id @default(cuid())
+
+  prescription   Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  prescriptionId String
+
+  name         String
+  dosage       String?
+  quantity     Int?
+  instructions String?
+}
+
+/**
+ * =========================
+ * STATUS
+ * =========================
+ */
+enum PrescriptionStatus {
+  pending
+  consumed
+}
